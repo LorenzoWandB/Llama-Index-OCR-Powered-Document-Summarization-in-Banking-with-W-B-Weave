@@ -1,0 +1,10 @@
+weave
+openai
+python-dotenv
+pinecone
+numpy
+scikit-learn
+weave[scorers]
+llama-cloud-services
+streamlit
+pydantic
