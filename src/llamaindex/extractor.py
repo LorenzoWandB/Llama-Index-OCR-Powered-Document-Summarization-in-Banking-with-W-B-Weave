@@ -13,45 +13,36 @@ load_dotenv()
 
 
 class IncomeStatement(BaseModel):
-    company_name: str = Field(
-        description="The name of the company"
-    )
-    total_revenue: float = Field(description="Total revenue amount")
-    cost_of_goods_sold: float = Field(description="Cost of goods sold amount")
-    gross_profit: float = Field(description="Gross profit amount")
-    payroll_expense: float = Field(description="Payroll expense amount")
-    depreciation_expense: float = Field(description="Depreciation expense amount")
-    total_operating_expenses: float = Field(
-        description="Total operating expenses amount"
-    )
-    interest_expense: float = Field(description="Interest expense amount")
-    taxes: float = Field(description="Taxes amount")
-    net_profit: float = Field(description="Net profit or net income amount")
+    company_name: str = Field(description="The name of the company")
+    total_revenue: float = Field(description="Total revenue or net sales amount")
+    cost_of_goods_sold: float = Field(description="Cost of goods sold or cost of sales")
+    gross_profit: float = Field(description="Gross profit (revenue minus COGS)")
+    total_operating_expenses: float = Field(description="Total operating expenses")
+    operating_income: float = Field(description="Operating income or operating profit")
+    interest_expense: float = Field(description="Interest expense")
+    taxes: float = Field(description="Income tax expense")
+    net_profit: float = Field(description="Net profit, net income, or net earnings")
+
+
+_EXTRACT_CONFIG = ExtractConfig(
+    use_reasoning=True,
+    cite_sources=True,
+    extraction_mode=ExtractMode.MULTIMODAL,
+)
 
 
 @weave.op()
 def get_extraction_agent(
-    agent_name: str = "income-statement-parser",
+    agent_name: str = "income-statement-parser-v2",
     data_schema: BaseModel = IncomeStatement,
-) -> Any:  # LlamaExtractAgent is not exported, so using Any
-    """
-    Retrieves a LlamaExtract agent by name, or creates it if it doesn't exist.
-    This is cached to avoid recreating the agent on every run.
-    """
+) -> Any:
     extractor = LlamaExtract()
     try:
-        # Check if an agent with this name already exists
         agent = extractor.get_agent(name=agent_name)
         return agent
-    except Exception:  # Broad exception because the specific one isn't documented
-        # If not, create a new one
-        config = ExtractConfig(
-            use_reasoning=True,
-            cite_sources=True,
-            extraction_mode=ExtractMode.MULTIMODAL,
-        )
+    except Exception:
         agent = extractor.create_agent(
-            name=agent_name, data_schema=data_schema, config=config
+            name=agent_name, data_schema=data_schema, config=_EXTRACT_CONFIG
         )
         return agent
 
@@ -72,7 +63,7 @@ def _prepare_source(source: Union[str, IO[bytes]]) -> Union[str, SourceText]:
 @weave.op()
 async def extract_documents(
     sources: Iterable[Union[str, IO[bytes]]],
-    agent_name: str = "income-statement-parser",
+    agent_name: str = "income-statement-parser-v2",
 ) -> List[Dict[str, Any]]:
     """
     Asynchronously extracts structured data from a list of documents.
