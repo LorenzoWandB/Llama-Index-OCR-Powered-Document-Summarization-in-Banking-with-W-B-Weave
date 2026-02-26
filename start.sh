@@ -34,6 +34,6 @@ echo ""
 echo "Press Ctrl+C to stop the server"
 echo ""
 
-# Run Streamlit
-streamlit run streamlit_app.py
+# Run Streamlit using the venv binary directly
+./venv/bin/streamlit run streamlit_app.py
 

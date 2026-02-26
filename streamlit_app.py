@@ -359,6 +359,56 @@ if st.session_state.step == 1:
                 st.markdown('</div>', unsafe_allow_html=True)
                 st.markdown('</div>', unsafe_allow_html=True)
             
+            metadata = st.session_state.extracted_data.get('metadata')
+            if metadata:
+                def _to_dict(obj):
+                    if isinstance(obj, dict):
+                        return obj
+                    if hasattr(obj, 'model_dump'):
+                        return obj.model_dump()
+                    if hasattr(obj, '__dict__'):
+                        return {k: v for k, v in vars(obj).items() if not k.startswith('_')}
+                    return obj
+
+                meta_dict = _to_dict(metadata)
+                field_metadata = meta_dict.get('field_metadata') if isinstance(meta_dict, dict) else None
+
+                if field_metadata:
+                    field_entries = _to_dict(field_metadata)
+                    if isinstance(field_entries, dict):
+                        with st.expander("🔍 View Reasoning & Citations (LlamaExtract)"):
+                            for field_name, field_info in field_entries.items():
+                                info = _to_dict(field_info)
+                                label = field_name.replace('_', ' ').title()
+                                if isinstance(info, dict):
+                                    reasoning = info.get('reasoning') or info.get('reason')
+                                    citation = info.get('citation') or info.get('source') or info.get('citations')
+                                    st.markdown(f"**{label}**")
+                                    if reasoning:
+                                        st.caption(f"💡 Reasoning: {reasoning}")
+                                    if citation:
+                                        cite_parts = []
+                                        raw = citation if isinstance(citation, list) else [citation]
+                                        for c in raw:
+                                            c = _to_dict(c) if not isinstance(c, (str, int, float)) else c
+                                            if isinstance(c, dict):
+                                                page = c.get('page')
+                                                text = c.get('matching_text', '')
+                                                if page is not None or text:
+                                                    cite_parts.append(f"Page {page}: \"{text}\"" if page is not None else f"\"{text}\"")
+                                            else:
+                                                cite_parts.append(str(c))
+                                        if cite_parts:
+                                            st.caption(f"📄 Citation: {'; '.join(cite_parts)}")
+                                    if not reasoning and not citation:
+                                        st.json(info)
+                                else:
+                                    st.markdown(f"**{label}:** {info}")
+                                st.markdown("---")
+                else:
+                    with st.expander("🔍 View Extraction Metadata (LlamaExtract)"):
+                        st.json(_to_dict(metadata) if isinstance(_to_dict(metadata), dict) else str(metadata))
+            
             # Continue button
             st.markdown("<br>", unsafe_allow_html=True)
             col1, col2, col3 = st.columns([3, 1, 0.5])
